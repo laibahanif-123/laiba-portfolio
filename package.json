@@ -1,0 +1,16 @@
+{
+  "name": "laiba-hanif-mern-portfolio",
+  "version": "1.0.0",
+  "description": "Professional Full Stack MERN Portfolio for Laiba Hanif",
+  "scripts": {
+    "dev": "concurrently \"npm run server --prefix server\" \"npm run dev --prefix client\"",
+    "start": "node server/server.js",
+    "client": "npm run dev --prefix client",
+    "server": "npm start --prefix server",
+    "install-all": "npm install && npm install --prefix server && npm install --prefix client",
+    "build": "npm run build --prefix client"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
