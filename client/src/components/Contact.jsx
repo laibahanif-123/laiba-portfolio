@@ -87,39 +87,50 @@ export default function Contact({ onNotify }) {
 
     setStatus({ submitting: true, success: false, error: false, message: '' });
 
-    // Try EmailJS first if keys are configured, otherwise submit to local MERN /api/contact endpoint or graceful fallback
-    let sentSuccess = false;
-
-    // 1. Try sending via backend server endpoint
+    // Send to backend /api/contact → Express → MongoDB
     try {
       const res = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          email: formData.email.trim(),
+          subject: formData.subject.trim() || 'Portfolio Inquiry',
+          message: formData.message.trim(),
+        }),
       });
 
-      if (res.ok) {
-        sentSuccess = true;
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        // ✅ Successfully saved to MongoDB (or memory fallback on server)
+        setStatus({
+          submitting: false,
+          success: true,
+          error: false,
+          message: `Thank you, ${formData.name}! Your message has been received. I will respond to you at ${formData.email} within 24 hours.`,
+        });
+        triggerConfetti();
+        onNotify?.(`Message sent successfully from ${formData.name}!`);
+        setFormData({ name: '', email: '', subject: '', message: '' });
+      } else {
+        // Server returned an error
+        setStatus({
+          submitting: false,
+          success: false,
+          error: true,
+          message: data.message || 'Failed to send message. Please try again.',
+        });
       }
     } catch (err) {
-      // Backend not running; will fallback gracefully
-    }
-
-    // 2. Fallback or client simulation
-    setTimeout(() => {
+      // Network error – backend not running
       setStatus({
         submitting: false,
-        success: true,
-        error: false,
-        message: `Thank you, ${formData.name}! Your message has been received. I will respond to you at ${formData.email} promptly.`,
+        success: false,
+        error: true,
+        message: 'Could not reach the server. Please email me directly at ' + (window.__PERSONAL_EMAIL__ || 'anshaneef919@gmail.com'),
       });
-
-      triggerConfetti();
-      onNotify?.(`Message sent successfully from ${formData.name}!`);
-
-      // Reset form
-      setFormData({ name: '', email: '', subject: '', message: '' });
-    }, 1000);
+    }
   };
 
   return (
