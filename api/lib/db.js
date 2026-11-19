@@ -1,7 +1,6 @@
 /**
  * db.js — Cached MongoDB connection for Vercel Serverless Functions
  *
- * WHY THIS EXISTS:
  * Serverless functions are cold-started per request. If we call mongoose.connect()
  * every time, we open thousands of connections and exhaust the Atlas connection pool.
  * This module caches the connection in the Node.js module cache so that subsequent
@@ -9,15 +8,6 @@
  */
 
 const mongoose = require('mongoose');
-
-const MONGO_URI = process.env.MONGO_URI;
-
-if (!MONGO_URI) {
-  throw new Error(
-    '❌ MONGO_URI environment variable is not set.\n' +
-    'Set it in Vercel Dashboard → Project Settings → Environment Variables.'
-  );
-}
 
 // Cache lives as long as the serverless function instance is warm
 let cached = global._mongooseCache;
@@ -27,8 +17,16 @@ if (!cached) {
 }
 
 async function connectDB() {
+  const MONGO_URI = process.env.MONGO_URI;
+
+  if (!MONGO_URI) {
+    throw new Error(
+      'MONGO_URI environment variable is not set. Please set it in your Vercel Dashboard.'
+    );
+  }
+
   // If already connected, return the existing connection
-  if (cached.conn) {
+  if (cached.conn && mongoose.connection.readyState === 1) {
     return cached.conn;
   }
 
@@ -36,7 +34,7 @@ async function connectDB() {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
-      serverSelectionTimeoutMS: 10000,
+      serverSelectionTimeoutMS: 8000,
       socketTimeoutMS: 45000,
     };
 

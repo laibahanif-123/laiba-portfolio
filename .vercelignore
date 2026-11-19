@@ -1,0 +1,5 @@
+# Tell Vercel to ignore local server folder
+# Local dev runs from server/server.js, but Vercel deployment runs from api/index.js
+server/
+generate_cv_pdf.py
+*.md

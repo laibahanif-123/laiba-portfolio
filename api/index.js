@@ -12,6 +12,7 @@
 
 const express = require('express');
 const cors = require('cors');
+require('dotenv').config();
 const connectDB = require('./lib/db');
 const Contact = require('./models/Contact');
 
@@ -23,15 +24,14 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
-  // Vercel preview and production URLs — both patterns allowed
-  /https:\/\/laiba-portfolio.*\.vercel\.app$/,
+  /\.vercel\.app$/,
   process.env.CLIENT_ORIGIN,
 ].filter(Boolean);
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // No origin = Postman / curl / server-to-server → allow
+      // No origin = same-origin / Postman / curl / server-to-server → allow
       if (!origin) return callback(null, true);
 
       const allowed = allowedOrigins.some((o) =>
@@ -39,7 +39,10 @@ app.use(
       );
 
       if (allowed) return callback(null, true);
-      return callback(new Error('CORS: Origin not allowed – ' + origin));
+      // Allow all subdomains of vercel.app
+      if (origin.endsWith('.vercel.app')) return callback(null, true);
+
+      return callback(null, true); // Fallback to permissive for public portfolio contact
     },
     methods: ['GET', 'POST', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
@@ -69,11 +72,11 @@ app.use(async (req, res, next) => {
 });
 
 // ─────────────────────────────────────────────────────────────
-// ROUTES
+// ROUTES (supports both '/api/endpoint' and '/endpoint' paths)
 // ─────────────────────────────────────────────────────────────
 
 // Health Check
-app.get('/api/health', (req, res) => {
+app.get(['/api/health', '/health'], (req, res) => {
   res.json({
     server: 'online',
     database: 'connected',
@@ -82,28 +85,28 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Root info
-app.get('/api', (req, res) => {
+// Root API info
+app.get(['/api', '/'], (req, res) => {
   res.json({
     status: 'success',
     message: 'Laiba Hanif Portfolio API – running on Vercel Serverless',
     version: '2.0.0',
     developer: 'Laiba Hanif – Software Engineering @ COMSATS University Islamabad',
     endpoints: {
-      health:     'GET  /api/health',
-      contact:    'POST /api/contact',
-      getMessages:'GET  /api/contact',
-      projects:   'GET  /api/projects',
+      health:      'GET  /api/health',
+      contact:     'POST /api/contact',
+      getMessages: 'GET  /api/contact',
+      projects:    'GET  /api/projects',
     },
   });
 });
 
 // ─────────────────────────────────────────────────────────────
-// Contact Routes (inline — no sub-require for serverless clarity)
+// Contact Routes
 // ─────────────────────────────────────────────────────────────
 
 // POST /api/contact — Save message to MongoDB
-app.post('/api/contact', async (req, res) => {
+app.post(['/api/contact', '/contact'], async (req, res) => {
   try {
     const { name, email, subject, message } = req.body;
 
@@ -155,7 +158,7 @@ app.post('/api/contact', async (req, res) => {
 });
 
 // GET /api/contact — Retrieve all messages
-app.get('/api/contact', async (req, res) => {
+app.get(['/api/contact', '/contact'], async (req, res) => {
   try {
     const messages = await Contact.find().sort({ createdAt: -1 });
     return res.json({
@@ -295,7 +298,7 @@ const cvProjects = [
   },
 ];
 
-app.get('/api/projects', (req, res) => {
+app.get(['/api/projects', '/projects'], (req, res) => {
   res.json({
     success: true,
     count: cvProjects.length,

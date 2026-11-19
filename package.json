@@ -1,13 +1,14 @@
 {
   "name": "laiba-hanif-mern-portfolio",
   "version": "1.0.0",
-  "description": "Professional Full Stack MERN Portfolio for Laiba Hanif – Vercel Deployment",
+  "description": "Professional Full Stack MERN Portfolio for Laiba Hanif – Single Project Vercel Deployment",
   "main": "api/index.js",
   "scripts": {
     "dev": "concurrently \"node server/server.js\" \"npm run dev --prefix client\"",
     "start": "node server/server.js",
     "client": "npm run dev --prefix client",
-    "build": "npm run build --prefix client"
+    "build": "npm run build --prefix client",
+    "postinstall": "npm install --prefix client"
   },
   "dependencies": {
     "cors": "^2.8.5",
